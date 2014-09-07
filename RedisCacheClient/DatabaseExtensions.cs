@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Linq;
+using System.Runtime.Caching;
 using System.Runtime.Serialization.Formatters.Binary;
 
 using StackExchange.Redis;
@@ -30,8 +31,30 @@ namespace RedisCacheClient
             return Deserialize(database.StringGetSet(key, Serialize(value)));
         }
 
+        internal static void Expire(this IDatabase database, string key, CacheItemPolicy policy)
+        {
+            if (policy == null)
+            {
+                return;
+            }
+
+            if (policy.AbsoluteExpiration != ObjectCache.InfiniteAbsoluteExpiration)
+            {
+                database.KeyExpire(key, policy.AbsoluteExpiration.UtcDateTime);
+            }
+            else if (policy.SlidingExpiration != ObjectCache.NoSlidingExpiration)
+            {
+                database.KeyExpire(key, policy.SlidingExpiration);
+            }
+        }
+
         private static object Deserialize(byte[] value)
         {
+            if (value == null)
+            {
+                return null;
+            }
+
             var formatter = new BinaryFormatter();
 
             using (var stream = new MemoryStream(value))
@@ -42,6 +65,11 @@ namespace RedisCacheClient
 
         private static byte[] Serialize(object value)
         {
+            if (value == null)
+            {
+                return null;
+            }
+
             var formatter = new BinaryFormatter();
 
             using (var stream = new MemoryStream())

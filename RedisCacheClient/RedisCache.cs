@@ -10,11 +10,23 @@ namespace RedisCacheClient
 {
     public class RedisCache : ObjectCache, IDisposable
     {
-        public RedisCache(string connectionString)
+        public RedisCache(string configuration)
+            : this(ConfigurationOptions.Parse(configuration))
         {
-            _configuration = ConfigurationOptions.Parse(connectionString);
         }
 
+        public RedisCache(ConfigurationOptions configuration)
+            : this(0, configuration)
+        {
+        }
+
+        public RedisCache(int db, ConfigurationOptions configuration)
+        {
+            _db = db;
+            _configuration = configuration;
+        }
+
+        private readonly int _db;
         private readonly ConfigurationOptions _configuration;
 
         private int _disposed;
@@ -54,14 +66,14 @@ namespace RedisCacheClient
                 throw new NotSupportedException("regionName");
             }
 
-            var database = Connection.GetDatabase();
+            var database = Connection.GetDatabase(_db);
 
             return database.KeyExists(key);
         }
 
         public override object AddOrGetExisting(string key, object value, DateTimeOffset absoluteExpiration, string regionName = null)
         {
-            return AddOrGetExistingInternal(key, value, regionName);
+            return AddOrGetExistingInternal(key, value, regionName, new CacheItemPolicy { AbsoluteExpiration = absoluteExpiration });
         }
 
         public override CacheItem AddOrGetExisting(CacheItem value, CacheItemPolicy policy)
@@ -71,12 +83,12 @@ namespace RedisCacheClient
                 throw new ArgumentNullException("value");
             }
 
-            return new CacheItem(value.Key, AddOrGetExistingInternal(value.Key, value.Value, value.RegionName), value.RegionName);
+            return new CacheItem(value.Key, AddOrGetExistingInternal(value.Key, value.Value, value.RegionName, policy), value.RegionName);
         }
 
         public override object AddOrGetExisting(string key, object value, CacheItemPolicy policy, string regionName = null)
         {
-            return AddOrGetExistingInternal(key, value, regionName);
+            return AddOrGetExistingInternal(key, value, regionName, policy);
         }
 
         public override object Get(string key, string regionName = null)
@@ -91,7 +103,7 @@ namespace RedisCacheClient
 
         public override void Set(string key, object value, DateTimeOffset absoluteExpiration, string regionName = null)
         {
-            SetInternal(key, value, regionName);
+            SetInternal(key, value, regionName, new CacheItemPolicy { AbsoluteExpiration = absoluteExpiration });
         }
 
         public override void Set(CacheItem item, CacheItemPolicy policy)
@@ -101,12 +113,12 @@ namespace RedisCacheClient
                 throw new ArgumentNullException("item");
             }
 
-            SetInternal(item.Key, item.Value, item.RegionName);
+            SetInternal(item.Key, item.Value, item.RegionName, policy);
         }
 
         public override void Set(string key, object value, CacheItemPolicy policy, string regionName = null)
         {
-            SetInternal(key, value, regionName);
+            SetInternal(key, value, regionName, policy);
         }
 
         public override IDictionary<string, object> GetValues(IEnumerable<string> keys, string regionName = null)
@@ -116,7 +128,7 @@ namespace RedisCacheClient
                 throw new ArgumentNullException("keys");
             }
 
-            var database = Connection.GetDatabase();
+            var database = Connection.GetDatabase(_db);
 
             var arrayKeys = keys.ToArray();
 
@@ -141,7 +153,7 @@ namespace RedisCacheClient
 
             var value = GetInternal(key, regionName);
 
-            var database = Connection.GetDatabase();
+            var database = Connection.GetDatabase(_db);
 
             database.KeyDelete(key);
 
@@ -155,7 +167,7 @@ namespace RedisCacheClient
 
         public override DefaultCacheCapabilities DefaultCacheCapabilities
         {
-            get { return DefaultCacheCapabilities.OutOfProcessProvider; }
+            get { return DefaultCacheCapabilities.OutOfProcessProvider | DefaultCacheCapabilities.AbsoluteExpirations | DefaultCacheCapabilities.SlidingExpirations; }
         }
 
         public override string Name
@@ -166,7 +178,7 @@ namespace RedisCacheClient
         public override object this[string key]
         {
             get { return GetInternal(key, null); }
-            set { SetInternal(key, value, null); }
+            set { SetInternal(key, value, null, null); }
         }
 
         public bool IsDisposed
@@ -187,7 +199,7 @@ namespace RedisCacheClient
             }
         }
 
-        private object AddOrGetExistingInternal(string key, object value, string regionName)
+        private object AddOrGetExistingInternal(string key, object value, string regionName, CacheItemPolicy policy)
         {
             if (key == null)
             {
@@ -199,9 +211,13 @@ namespace RedisCacheClient
                 throw new NotSupportedException("regionName");
             }
 
-            var database = Connection.GetDatabase();
+            var database = Connection.GetDatabase(_db);
 
-            return database.GetSet(key, value);
+            var result = database.GetSet(key, value);
+
+            database.Expire(key, policy);
+
+            return result;
         }
 
         private object GetInternal(string key, string regionName)
@@ -216,12 +232,12 @@ namespace RedisCacheClient
                 throw new NotSupportedException("regionName");
             }
 
-            var database = Connection.GetDatabase();
+            var database = Connection.GetDatabase(_db);
 
             return database.Get(key);
         }
 
-        private void SetInternal(string key, object value, string regionName)
+        private void SetInternal(string key, object value, string regionName, CacheItemPolicy policy)
         {
             if (key == null)
             {
@@ -233,9 +249,10 @@ namespace RedisCacheClient
                 throw new NotSupportedException("regionName");
             }
 
-            var database = Connection.GetDatabase();
+            var database = Connection.GetDatabase(_db);
 
             database.Set(key, value);
+            database.Expire(key, policy);
         }
     }
 }
