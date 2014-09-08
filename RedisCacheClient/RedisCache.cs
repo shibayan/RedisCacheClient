@@ -18,12 +18,17 @@ namespace RedisCacheClient
         }
 
         public RedisCache(string configuration)
-            : this(ConfigurationOptions.Parse(configuration))
+            : this(DefaultDb, configuration)
+        {
+        }
+
+        public RedisCache(int db, string configuration)
+            : this(db, ConfigurationOptions.Parse(configuration))
         {
         }
 
         public RedisCache(ConfigurationOptions configuration)
-            : this(0, configuration)
+            : this(DefaultDb, configuration)
         {
         }
 
@@ -35,6 +40,8 @@ namespace RedisCacheClient
             _serializer = _defaultSerializer;
             _deserializer = _defaultDeserializer;
         }
+
+        private const int DefaultDb = 0;
 
         private readonly int _db;
         private readonly ConfigurationOptions _configuration;
@@ -76,12 +83,12 @@ namespace RedisCacheClient
 
         public override CacheEntryChangeMonitor CreateCacheEntryChangeMonitor(IEnumerable<string> keys, string regionName = null)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         protected override IEnumerator<KeyValuePair<string, object>> GetEnumerator()
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public override bool Contains(string key, string regionName = null)
@@ -153,36 +160,11 @@ namespace RedisCacheClient
 
         public override IDictionary<string, object> GetValues(IEnumerable<string> keys, string regionName = null)
         {
-            if (keys == null)
-            {
-                throw new ArgumentNullException("keys");
-            }
-
-            var database = Connection.GetDatabase(_db);
-
-            var arrayKeys = keys.ToArray();
-
-            var values = database.StringGet(arrayKeys.Select(p => (RedisKey)p).ToArray());
-
-            var result = values.Select(p => _deserializer(p)).ToArray();
-
-            var dic = new Dictionary<string, object>();
-
-            for (int i = 0; i < arrayKeys.Length; i++)
-            {
-                dic.Add(arrayKeys[i], result[i]);
-            }
-
-            return dic;
+            return GetInternal(keys.ToArray(), regionName);
         }
 
         public override object Remove(string key, string regionName = null)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException("key");
-            }
-
             var value = GetInternal(key, regionName);
 
             var database = Connection.GetDatabase(_db);
@@ -194,7 +176,7 @@ namespace RedisCacheClient
 
         public override long GetCount(string regionName = null)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
 
         public override DefaultCacheCapabilities DefaultCacheCapabilities
@@ -246,6 +228,11 @@ namespace RedisCacheClient
                 throw new ArgumentNullException("key");
             }
 
+            if (value == null)
+            {
+                throw new ArgumentNullException("value");
+            }
+
             if (regionName != null)
             {
                 throw new NotSupportedException("regionName");
@@ -277,11 +264,35 @@ namespace RedisCacheClient
             return _deserializer(database.StringGet(key));
         }
 
+        private IDictionary<string, object> GetInternal(string[] keys, string regionName)
+        {
+            if (keys == null)
+            {
+                throw new ArgumentNullException("keys");
+            }
+
+            if (regionName != null)
+            {
+                throw new NotSupportedException("regionName");
+            }
+
+            var database = Connection.GetDatabase(_db);
+
+            var values = database.StringGet(keys.Select(p => (RedisKey)p).ToArray());
+
+            return Enumerable.Range(0, keys.Length).ToDictionary(p => keys[p], p => _deserializer(values[p]));
+        }
+
         private void SetInternal(string key, object value, string regionName, CacheItemPolicy policy)
         {
             if (key == null)
             {
                 throw new ArgumentNullException("key");
+            }
+
+            if (value == null)
+            {
+                throw new ArgumentNullException("value");
             }
 
             if (regionName != null)
