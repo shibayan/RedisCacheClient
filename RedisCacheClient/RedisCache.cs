@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.Caching;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Threading;
 
 using StackExchange.Redis;
@@ -10,6 +12,11 @@ namespace RedisCacheClient
 {
     public class RedisCache : ObjectCache, IDisposable
     {
+        static RedisCache()
+        {
+            SetDefaultSerializers(Serialize, Deserialize);
+        }
+
         public RedisCache(string configuration)
             : this(ConfigurationOptions.Parse(configuration))
         {
@@ -24,6 +31,9 @@ namespace RedisCacheClient
         {
             _db = db;
             _configuration = configuration;
+
+            _serializer = _defaultSerializer;
+            _deserializer = _defaultDeserializer;
         }
 
         private readonly int _db;
@@ -32,7 +42,10 @@ namespace RedisCacheClient
         private int _disposed;
         private ConnectionMultiplexer _connection;
 
-        private ConnectionMultiplexer Connection
+        private Func<object, byte[]> _serializer;
+        private Func<byte[], object> _deserializer;
+
+        internal ConnectionMultiplexer Connection
         {
             get
             {
@@ -43,6 +56,23 @@ namespace RedisCacheClient
                 return _connection;
             }
         }
+
+        private static Func<object, byte[]> _defaultSerializer;
+        private static Func<byte[], object> _defaultDeserializer;
+
+        public void SetSerializers(Func<object, byte[]> serializer, Func<byte[], object> deserializer)
+        {
+            _serializer = serializer;
+            _deserializer = deserializer;
+        }
+
+        public static void SetDefaultSerializers(Func<object, byte[]> serializer, Func<byte[], object> deserializer)
+        {
+            _defaultSerializer = serializer;
+            _defaultDeserializer = deserializer;
+        }
+
+        #region ObjectCache
 
         public override CacheEntryChangeMonitor CreateCacheEntryChangeMonitor(IEnumerable<string> keys, string regionName = null)
         {
@@ -132,7 +162,9 @@ namespace RedisCacheClient
 
             var arrayKeys = keys.ToArray();
 
-            var result = database.Get(arrayKeys);
+            var values = database.StringGet(arrayKeys.Select(p => (RedisKey)p).ToArray());
+
+            var result = values.Select(p => _deserializer(p)).ToArray();
 
             var dic = new Dictionary<string, object>();
 
@@ -181,6 +213,10 @@ namespace RedisCacheClient
             set { SetInternal(key, value, null, null); }
         }
 
+        #endregion
+
+        #region IDisposable
+
         public bool IsDisposed
         {
             get { return _disposed == 1; }
@@ -199,6 +235,10 @@ namespace RedisCacheClient
             }
         }
 
+        #endregion
+
+        #region private
+
         private object AddOrGetExistingInternal(string key, object value, string regionName, CacheItemPolicy policy)
         {
             if (key == null)
@@ -213,7 +253,7 @@ namespace RedisCacheClient
 
             var database = Connection.GetDatabase(_db);
 
-            var result = database.GetSet(key, value);
+            var result = _deserializer(database.StringGetSet(key, _serializer(value)));
 
             database.Expire(key, policy);
 
@@ -234,7 +274,7 @@ namespace RedisCacheClient
 
             var database = Connection.GetDatabase(_db);
 
-            return database.Get(key);
+            return _deserializer(database.StringGet(key));
         }
 
         private void SetInternal(string key, object value, string regionName, CacheItemPolicy policy)
@@ -251,8 +291,37 @@ namespace RedisCacheClient
 
             var database = Connection.GetDatabase(_db);
 
-            database.Set(key, value);
+            database.StringSet(key, _serializer(value));
             database.Expire(key, policy);
         }
+
+        private static object Deserialize(byte[] value)
+        {
+            if (value == null)
+            {
+                return null;
+            }
+
+            var formatter = new BinaryFormatter();
+
+            using (var stream = new MemoryStream(value))
+            {
+                return formatter.Deserialize(stream);
+            }
+        }
+
+        private static byte[] Serialize(object value)
+        {
+            var formatter = new BinaryFormatter();
+
+            using (var stream = new MemoryStream())
+            {
+                formatter.Serialize(stream, value);
+
+                return stream.ToArray();
+            }
+        }
+
+        #endregion
     }
 }
