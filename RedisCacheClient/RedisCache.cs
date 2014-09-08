@@ -169,7 +169,7 @@ namespace RedisCacheClient
 
             var database = Connection.GetDatabase(_db);
 
-            database.KeyDelete(key);
+            database.KeyDelete(key, CommandFlags.FireAndForget);
 
             return value;
         }

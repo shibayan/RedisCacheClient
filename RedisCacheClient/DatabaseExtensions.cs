@@ -15,11 +15,11 @@ namespace RedisCacheClient
 
             if (policy.AbsoluteExpiration != ObjectCache.InfiniteAbsoluteExpiration)
             {
-                database.KeyExpire(key, policy.AbsoluteExpiration.UtcDateTime);
+                database.KeyExpire(key, policy.AbsoluteExpiration.UtcDateTime, CommandFlags.FireAndForget);
             }
             else if (policy.SlidingExpiration != ObjectCache.NoSlidingExpiration)
             {
-                database.KeyExpire(key, policy.SlidingExpiration);
+                database.KeyExpire(key, policy.SlidingExpiration, CommandFlags.FireAndForget);
             }
         }
     }
