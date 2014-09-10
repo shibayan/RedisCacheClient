@@ -39,7 +39,7 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DatabaseExtensions.cs" />
+    <Compile Include="ConnectionExtensions.cs" />
     <Compile Include="RedisCache.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

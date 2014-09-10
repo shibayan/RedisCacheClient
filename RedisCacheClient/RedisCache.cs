@@ -88,7 +88,11 @@ namespace RedisCacheClient
 
         protected override IEnumerator<KeyValuePair<string, object>> GetEnumerator()
         {
-            throw new NotSupportedException();
+            var server = Connection.GetServer();
+
+            var keys = server.Keys(_db);
+
+            return GetInternal(keys.ToArray(), null).GetEnumerator();
         }
 
         public override bool Contains(string key, string regionName = null)
@@ -176,12 +180,14 @@ namespace RedisCacheClient
 
         public override long GetCount(string regionName = null)
         {
-            throw new NotSupportedException();
+            var server = Connection.GetServer();
+
+            return server.DatabaseSize(_db);
         }
 
         public override DefaultCacheCapabilities DefaultCacheCapabilities
         {
-            get { return DefaultCacheCapabilities.OutOfProcessProvider | DefaultCacheCapabilities.AbsoluteExpirations | DefaultCacheCapabilities.SlidingExpirations; }
+            get { return DefaultCacheCapabilities.OutOfProcessProvider | DefaultCacheCapabilities.AbsoluteExpirations; }
         }
 
         public override string Name
@@ -239,10 +245,13 @@ namespace RedisCacheClient
             }
 
             var database = Connection.GetDatabase(_db);
-
+            
             var result = _deserializer(database.StringGetSet(key, _serializer(value)));
 
-            database.Expire(key, policy);
+            if (policy != null && policy.AbsoluteExpiration != InfiniteAbsoluteExpiration)
+            {
+                database.KeyExpire(key, policy.AbsoluteExpiration.UtcDateTime, CommandFlags.FireAndForget);
+            }
 
             return result;
         }
@@ -264,23 +273,33 @@ namespace RedisCacheClient
             return _deserializer(database.StringGet(key));
         }
 
-        private IDictionary<string, object> GetInternal(string[] keys, string regionName)
+        private IDictionary<string, object> GetInternal(IEnumerable<string> keys, string regionName)
         {
             if (keys == null)
             {
                 throw new ArgumentNullException("keys");
             }
 
+            return GetInternal(keys.Select(p => (RedisKey)p).ToArray(), regionName);
+        }
+
+        private IDictionary<string, object> GetInternal(RedisKey[] keys, string regionName)
+        {
             if (regionName != null)
             {
                 throw new NotSupportedException("regionName");
             }
 
+            if (keys.Length == 0)
+            {
+                return new Dictionary<string, object>();
+            }
+
             var database = Connection.GetDatabase(_db);
 
-            var values = database.StringGet(keys.Select(p => (RedisKey)p).ToArray());
+            var values = database.StringGet(keys);
 
-            return Enumerable.Range(0, keys.Length).ToDictionary(p => keys[p], p => _deserializer(values[p]));
+            return Enumerable.Range(0, keys.Length).ToDictionary(p => (string)keys[p], p => _deserializer(values[p]));
         }
 
         private void SetInternal(string key, object value, string regionName, CacheItemPolicy policy)
@@ -302,8 +321,14 @@ namespace RedisCacheClient
 
             var database = Connection.GetDatabase(_db);
 
-            database.StringSet(key, _serializer(value));
-            database.Expire(key, policy);
+            if (policy != null && policy.AbsoluteExpiration != InfiniteAbsoluteExpiration)
+            {
+                database.StringSet(key, _serializer(value), policy.AbsoluteExpiration.UtcDateTime - DateTimeOffset.UtcNow);
+            }
+            else
+            {
+                database.StringSet(key, _serializer(value));
+            }
         }
 
         private static object Deserialize(byte[] value)

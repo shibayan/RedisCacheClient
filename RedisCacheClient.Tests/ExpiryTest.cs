@@ -18,9 +18,9 @@ namespace RedisCacheClient.Tests
             var key = "absolute";
             var expected = "value";
 
-            cache.Add(key, expected, DateTimeOffset.Now.AddSeconds(5));
+            cache.Add(key, expected, DateTimeOffset.Now.AddSeconds(3));
 
-            Thread.Sleep(4000);
+            Thread.Sleep(2000);
 
             var actual = cache.Get(key);
 
@@ -35,43 +35,9 @@ namespace RedisCacheClient.Tests
             var key = "absolute";
             var value = "value";
 
-            cache.Add(key, value, DateTimeOffset.Now.AddSeconds(5));
-
-            Thread.Sleep(6000);
-
-            var actual = cache.Get(key);
-
-            Assert.IsNull(actual);
-        }
-
-        [TestMethod]
-        public void SlidingLiving()
-        {
-            var cache = CreateRedisCache();
-
-            var key = "sliding";
-            var expected = "value";
-
-            cache.Add(key, expected, new CacheItemPolicy { SlidingExpiration = TimeSpan.FromSeconds(5) });
+            cache.Add(key, value, DateTimeOffset.Now.AddSeconds(3));
 
             Thread.Sleep(4000);
-
-            var actual = cache.Get(key);
-
-            Assert.AreEqual(expected, actual);
-        }
-
-        [TestMethod]
-        public void SlidingExpired()
-        {
-            var cache = CreateRedisCache();
-
-            var key = "sliding";
-            var value = "value";
-
-            cache.Add(key, value, new CacheItemPolicy { SlidingExpiration = TimeSpan.FromSeconds(5) });
-
-            Thread.Sleep(6000);
 
             var actual = cache.Get(key);
 
@@ -80,7 +46,18 @@ namespace RedisCacheClient.Tests
 
         private ObjectCache CreateRedisCache()
         {
-            return new RedisCache(ConfigurationManager.AppSettings["RedisConfiguration"]);
+#if false
+            var cache = MemoryCache.Default;
+#else
+            var cache = new RedisCache(ConfigurationManager.AppSettings["RedisConfiguration"]);
+#endif
+
+            foreach (var item in cache)
+            {
+                cache.Remove(item.Key);
+            }
+
+            return cache;
         }
     }
 }
