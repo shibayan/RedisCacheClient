@@ -60,9 +60,12 @@ namespace RedisCacheClient
                 {
                     _connection = ConnectionMultiplexer.Connect(_configuration);
                 }
+
                 return _connection;
             }
         }
+
+        private static readonly Dictionary<string, object> _empty = new Dictionary<string, object>();
 
         private static Func<object, byte[]> _defaultSerializer;
         private static Func<byte[], object> _defaultDeserializer;
@@ -88,6 +91,11 @@ namespace RedisCacheClient
 
         protected override IEnumerator<KeyValuePair<string, object>> GetEnumerator()
         {
+            if (IsDisposed)
+            {
+                return _empty.GetEnumerator();
+            }
+
             var server = Connection.GetServer();
 
             var keys = server.Keys(_db);
@@ -105,6 +113,11 @@ namespace RedisCacheClient
             if (regionName != null)
             {
                 throw new NotSupportedException("regionName");
+            }
+
+            if (IsDisposed)
+            {
+                return false;
             }
 
             var database = Connection.GetDatabase(_db);
@@ -169,9 +182,24 @@ namespace RedisCacheClient
 
         public override object Remove(string key, string regionName = null)
         {
-            var value = GetInternal(key, regionName);
+            if (key == null)
+            {
+                throw new ArgumentNullException("key");
+            }
+
+            if (regionName != null)
+            {
+                throw new NotSupportedException("regionName");
+            }
+
+            if (IsDisposed)
+            {
+                return null;
+            }
 
             var database = Connection.GetDatabase(_db);
+
+            var value = _deserializer(database.StringGet(key));
 
             database.KeyDelete(key, CommandFlags.FireAndForget);
 
@@ -180,6 +208,16 @@ namespace RedisCacheClient
 
         public override long GetCount(string regionName = null)
         {
+            if (regionName != null)
+            {
+                throw new NotSupportedException("regionName");
+            }
+
+            if (IsDisposed)
+            {
+                return 0;
+            }
+
             var server = Connection.GetServer();
 
             return server.DatabaseSize(_db);
@@ -221,6 +259,8 @@ namespace RedisCacheClient
             {
                 _connection.Dispose();
             }
+
+            GC.SuppressFinalize(this);
         }
 
         #endregion
@@ -242,6 +282,11 @@ namespace RedisCacheClient
             if (regionName != null)
             {
                 throw new NotSupportedException("regionName");
+            }
+
+            if (IsDisposed)
+            {
+                return null;
             }
 
             var database = Connection.GetDatabase(_db);
@@ -268,6 +313,11 @@ namespace RedisCacheClient
                 throw new NotSupportedException("regionName");
             }
 
+            if (IsDisposed)
+            {
+                return null;
+            }
+
             var database = Connection.GetDatabase(_db);
 
             return _deserializer(database.StringGet(key));
@@ -290,7 +340,7 @@ namespace RedisCacheClient
                 throw new NotSupportedException("regionName");
             }
 
-            if (keys.Length == 0)
+            if (IsDisposed || keys.Length == 0)
             {
                 return new Dictionary<string, object>();
             }
@@ -317,6 +367,11 @@ namespace RedisCacheClient
             if (regionName != null)
             {
                 throw new NotSupportedException("regionName");
+            }
+
+            if (IsDisposed)
+            {
+                return;
             }
 
             var database = Connection.GetDatabase(_db);
