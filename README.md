@@ -1,4 +1,4 @@
-RedisCacheClient
+RedisCacheClient [![NuGet Version](http://img.shields.io/nuget/v/RedisCacheClient.svg?style=flat)](https://www.nuget.org/packages/RedisCacheClient/) [![NuGet Downloads](http://img.shields.io/nuget/dt/RedisCacheClient.svg?style=flat)](https://www.nuget.org/packages/RedisCacheClient/)
 ================
 
 RedisCache is a compatible client and ObjectCache added in .NET 4
