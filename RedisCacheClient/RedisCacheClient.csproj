@@ -4,9 +4,25 @@
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <Authors>shibayan</Authors>
+    <Company>shibayan</Company>
+    <Description>RedisCacheClient is a compatible ObjectCache client for .NET Standard</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReleaseNotes>https://github.com/shibayan/RedisCacheClient/releases</PackageReleaseNotes>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>redis;cache;caching</PackageTags>
+    <RepositoryUrl>https://github.com/shibayan/RedisCacheClient</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="StackExchange.Redis" Version="2.2.62" />
     <PackageReference Include="System.Runtime.Caching" Version="4.7.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
 
 </Project>
