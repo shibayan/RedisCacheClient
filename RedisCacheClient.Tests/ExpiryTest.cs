@@ -1,16 +1,14 @@
 ﻿using System;
-using System.Configuration;
 using System.Runtime.Caching;
 using System.Threading;
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace RedisCacheClient.Tests
 {
-    [TestClass]
     public class ExpiryTest
     {
-        [TestMethod]
+        [Fact]
         public void AbsoluteLiving()
         {
             var cache = CreateRedisCache();
@@ -24,10 +22,10 @@ namespace RedisCacheClient.Tests
 
             var actual = cache.Get(key);
 
-            Assert.AreEqual(expected, actual);
+            Assert.Equal(expected, actual);
         }
 
-        [TestMethod]
+        [Fact]
         public void AbsoluteExpired()
         {
             var cache = CreateRedisCache();
@@ -41,16 +39,12 @@ namespace RedisCacheClient.Tests
 
             var actual = cache.Get(key);
 
-            Assert.IsNull(actual);
+            Assert.Null(actual);
         }
 
-        private ObjectCache CreateRedisCache()
+        private static ObjectCache CreateRedisCache()
         {
-#if false
-            var cache = MemoryCache.Default;
-#else
-            var cache = new RedisCache(ConfigurationManager.AppSettings["RedisConfiguration"]);
-#endif
+            var cache = new RedisCache(Environment.GetEnvironmentVariable("RedisConfiguration"));
 
             foreach (var item in cache)
             {

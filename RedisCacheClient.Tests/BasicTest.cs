@@ -1,15 +1,14 @@
-﻿using System.Collections;
-using System.Configuration;
+﻿using System;
+using System.Collections;
 using System.Runtime.Caching;
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace RedisCacheClient.Tests
 {
-    [TestClass]
     public class BasicTest
     {
-        [TestMethod]
+        [Fact]
         public void Add()
         {
             var cache = CreateRedisCache();
@@ -21,10 +20,10 @@ namespace RedisCacheClient.Tests
 
             var actual = cache.Get(key);
 
-            Assert.AreEqual(expected, actual);
+            Assert.Equal(expected, actual);
         }
 
-        [TestMethod]
+        [Fact]
         public void AddOrGetExisting()
         {
             var cache = CreateRedisCache();
@@ -36,10 +35,10 @@ namespace RedisCacheClient.Tests
 
             var actual = cache.Get(key);
 
-            Assert.AreEqual(expected, actual);
+            Assert.Equal(expected, actual);
         }
 
-        [TestMethod]
+        [Fact]
         public void SetAndAddOrGetExisting()
         {
             var cache = CreateRedisCache();
@@ -52,10 +51,10 @@ namespace RedisCacheClient.Tests
 
             var actual = cache.AddOrGetExisting(key, newValue, ObjectCache.InfiniteAbsoluteExpiration);
 
-            Assert.AreEqual(expected, actual);
+            Assert.Equal(expected, actual);
         }
 
-        [TestMethod]
+        [Fact]
         public void Contains()
         {
             var cache = CreateRedisCache();
@@ -67,10 +66,10 @@ namespace RedisCacheClient.Tests
 
             var actual = cache.Contains(key);
 
-            Assert.IsTrue(actual);
+            Assert.True(actual);
         }
 
-        [TestMethod]
+        [Fact]
         public void SetAndGet()
         {
             var cache = CreateRedisCache();
@@ -82,10 +81,10 @@ namespace RedisCacheClient.Tests
 
             var actual = cache.Get(key);
 
-            Assert.AreEqual(expected, actual);
+            Assert.Equal(expected, actual);
         }
 
-        [TestMethod]
+        [Fact]
         public void GetValues()
         {
             var cache = CreateRedisCache();
@@ -97,13 +96,13 @@ namespace RedisCacheClient.Tests
             {
                 cache.Set(keys[i], expected[i], ObjectCache.InfiniteAbsoluteExpiration);
             }
-            
+
             var actual = cache.GetValues(keys);
 
-            CollectionAssert.AreEqual(expected, (ICollection)actual.Values);
+            Assert.Equal(expected, (ICollection)actual.Values);
         }
 
-        [TestMethod]
+        [Fact]
         public void Remove()
         {
             var cache = CreateRedisCache();
@@ -117,10 +116,10 @@ namespace RedisCacheClient.Tests
 
             var actual = cache.Get(key);
 
-            Assert.IsNull(actual);
+            Assert.Null(actual);
         }
 
-        [TestMethod]
+        [Fact]
         public void RemoveAndReturn()
         {
             var cache = CreateRedisCache();
@@ -132,10 +131,10 @@ namespace RedisCacheClient.Tests
 
             var actual = cache.Remove(key);
 
-            Assert.AreEqual(excepted, actual);
+            Assert.Equal(excepted, actual);
         }
 
-        [TestMethod]
+        [Fact]
         public void Indexer()
         {
             var cache = CreateRedisCache();
@@ -147,10 +146,10 @@ namespace RedisCacheClient.Tests
 
             var actual = cache[key];
 
-            Assert.AreEqual(expected, actual);
+            Assert.Equal(expected, actual);
         }
 
-        [TestMethod]
+        [Fact]
         public void Empty()
         {
             var cache = CreateRedisCache();
@@ -159,10 +158,10 @@ namespace RedisCacheClient.Tests
 
             var actual = cache.Get(key);
 
-            Assert.IsNull(actual);
+            Assert.Null(actual);
         }
 
-        [TestMethod]
+        [Fact]
         public void GetCount()
         {
             var cache = CreateRedisCache();
@@ -176,16 +175,12 @@ namespace RedisCacheClient.Tests
 
             var actual = cache.GetCount();
 
-            Assert.AreEqual(expected, actual);
+            Assert.Equal(expected, actual);
         }
 
-        private ObjectCache CreateRedisCache()
+        private static ObjectCache CreateRedisCache()
         {
-#if false
-            var cache = MemoryCache.Default;
-#else
-            var cache = new RedisCache(ConfigurationManager.AppSettings["RedisConfiguration"]);
-#endif
+            var cache = new RedisCache(Environment.GetEnvironmentVariable("RedisConfiguration"));
 
             foreach (var item in cache)
             {
