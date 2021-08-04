@@ -2,7 +2,7 @@
 
 ![Build](https://github.com/shibayan/RedisCacheClient/workflows/Build/badge.svg)
 [![License](https://img.shields.io/github/license/shibayan/RedisCacheClient)](https://github.com/shibayan/RedisCacheClient/blob/master/LICENSE)
-[![Downloads](http://img.shields.io/nuget/dt/RedisCacheClient.svg?style=flat)](https://www.nuget.org/packages/RedisCacheClient/)
+[![Downloads](https://img.shields.io/nuget/dt/RedisCacheClient)](https://www.nuget.org/packages/RedisCacheClient/)
 
 RedisCacheClient is a compatible ObjectCache client for .NET Standard
 
