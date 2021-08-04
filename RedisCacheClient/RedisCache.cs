@@ -107,12 +107,12 @@ namespace RedisCacheClient
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
 
             if (regionName != null)
             {
-                throw new NotSupportedException("regionName");
+                throw new NotSupportedException(nameof(regionName));
             }
 
             if (IsDisposed)
@@ -134,7 +134,7 @@ namespace RedisCacheClient
         {
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 
             return new CacheItem(value.Key, AddOrGetExistingInternal(value.Key, value.Value, value.RegionName, policy), value.RegionName);
@@ -164,7 +164,7 @@ namespace RedisCacheClient
         {
             if (item == null)
             {
-                throw new ArgumentNullException("item");
+                throw new ArgumentNullException(nameof(item));
             }
 
             SetInternal(item.Key, item.Value, item.RegionName, policy);
@@ -184,12 +184,12 @@ namespace RedisCacheClient
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
 
             if (regionName != null)
             {
-                throw new NotSupportedException("regionName");
+                throw new NotSupportedException(nameof(regionName));
             }
 
             if (IsDisposed)
@@ -210,7 +210,7 @@ namespace RedisCacheClient
         {
             if (regionName != null)
             {
-                throw new NotSupportedException("regionName");
+                throw new NotSupportedException(nameof(regionName));
             }
 
             if (IsDisposed)
@@ -223,30 +223,21 @@ namespace RedisCacheClient
             return server.DatabaseSize(_db);
         }
 
-        public override DefaultCacheCapabilities DefaultCacheCapabilities
-        {
-            get { return DefaultCacheCapabilities.OutOfProcessProvider | DefaultCacheCapabilities.AbsoluteExpirations; }
-        }
+        public override DefaultCacheCapabilities DefaultCacheCapabilities => DefaultCacheCapabilities.OutOfProcessProvider | DefaultCacheCapabilities.AbsoluteExpirations;
 
-        public override string Name
-        {
-            get { return "Default"; }
-        }
+        public override string Name => "Default";
 
         public override object this[string key]
         {
-            get { return GetInternal(key, null); }
-            set { SetInternal(key, value, null, null); }
+            get => GetInternal(key, null);
+            set => SetInternal(key, value, null, null);
         }
 
         #endregion
 
         #region IDisposable
 
-        public bool IsDisposed
-        {
-            get { return _disposed == 1; }
-        }
+        public bool IsDisposed => _disposed == 1;
 
         public void Dispose()
         {
@@ -255,10 +246,7 @@ namespace RedisCacheClient
                 return;
             }
 
-            if (_connection != null)
-            {
-                _connection.Dispose();
-            }
+            _connection?.Dispose();
 
             GC.SuppressFinalize(this);
         }
@@ -271,17 +259,17 @@ namespace RedisCacheClient
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
 
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 
             if (regionName != null)
             {
-                throw new NotSupportedException("regionName");
+                throw new NotSupportedException(nameof(regionName));
             }
 
             if (IsDisposed)
@@ -290,7 +278,7 @@ namespace RedisCacheClient
             }
 
             var database = Connection.GetDatabase(_db);
-            
+
             var result = _deserializer(database.StringGetSet(key, _serializer(value)));
 
             if (policy != null && policy.AbsoluteExpiration != InfiniteAbsoluteExpiration)
@@ -305,12 +293,12 @@ namespace RedisCacheClient
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
 
             if (regionName != null)
             {
-                throw new NotSupportedException("regionName");
+                throw new NotSupportedException(nameof(regionName));
             }
 
             if (IsDisposed)
@@ -327,7 +315,7 @@ namespace RedisCacheClient
         {
             if (keys == null)
             {
-                throw new ArgumentNullException("keys");
+                throw new ArgumentNullException(nameof(keys));
             }
 
             return GetInternal(keys.Select(p => (RedisKey)p).ToArray(), regionName);
@@ -337,7 +325,7 @@ namespace RedisCacheClient
         {
             if (regionName != null)
             {
-                throw new NotSupportedException("regionName");
+                throw new NotSupportedException(nameof(regionName));
             }
 
             if (IsDisposed || keys.Length == 0)
@@ -356,17 +344,17 @@ namespace RedisCacheClient
         {
             if (key == null)
             {
-                throw new ArgumentNullException("key");
+                throw new ArgumentNullException(nameof(key));
             }
 
             if (value == null)
             {
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
             }
 
             if (regionName != null)
             {
-                throw new NotSupportedException("regionName");
+                throw new NotSupportedException(nameof(regionName));
             }
 
             if (IsDisposed)

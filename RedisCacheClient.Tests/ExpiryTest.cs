@@ -1,63 +1,47 @@
 ﻿using System;
-using System.Configuration;
-using System.Runtime.Caching;
 using System.Threading;
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace RedisCacheClient.Tests
 {
-    [TestClass]
     public class ExpiryTest
     {
-        [TestMethod]
+        public ExpiryTest()
+        {
+            _redisCache = new RedisCache(Environment.GetEnvironmentVariable("RedisConfiguration"));
+        }
+
+        private readonly RedisCache _redisCache;
+
+        [Fact]
         public void AbsoluteLiving()
         {
-            var cache = CreateRedisCache();
-
-            var key = "absolute";
+            var key = Guid.NewGuid().ToString();
             var expected = "value";
 
-            cache.Add(key, expected, DateTimeOffset.Now.AddSeconds(3));
+            _redisCache.Add(key, expected, DateTimeOffset.Now.AddSeconds(5));
 
             Thread.Sleep(2000);
 
-            var actual = cache.Get(key);
+            var actual = _redisCache.Get(key);
 
-            Assert.AreEqual(expected, actual);
+            Assert.Equal(expected, actual);
         }
 
-        [TestMethod]
+        [Fact]
         public void AbsoluteExpired()
         {
-            var cache = CreateRedisCache();
-
-            var key = "absolute";
+            var key = Guid.NewGuid().ToString();
             var value = "value";
 
-            cache.Add(key, value, DateTimeOffset.Now.AddSeconds(3));
+            _redisCache.Add(key, value, DateTimeOffset.Now.AddSeconds(2));
 
             Thread.Sleep(4000);
 
-            var actual = cache.Get(key);
+            var actual = _redisCache.Get(key);
 
-            Assert.IsNull(actual);
-        }
-
-        private ObjectCache CreateRedisCache()
-        {
-#if false
-            var cache = MemoryCache.Default;
-#else
-            var cache = new RedisCache(ConfigurationManager.AppSettings["RedisConfiguration"]);
-#endif
-
-            foreach (var item in cache)
-            {
-                cache.Remove(item.Key);
-            }
-
-            return cache;
+            Assert.Null(actual);
         }
     }
 }

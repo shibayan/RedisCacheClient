@@ -1,198 +1,152 @@
-﻿using System.Collections;
-using System.Configuration;
+﻿using System;
+using System.Collections;
+using System.Linq;
 using System.Runtime.Caching;
 
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace RedisCacheClient.Tests
 {
-    [TestClass]
     public class BasicTest
     {
-        [TestMethod]
+        public BasicTest()
+        {
+            _redisCache = new RedisCache(Environment.GetEnvironmentVariable("RedisConfiguration"));
+        }
+
+        private readonly RedisCache _redisCache;
+
+        [Fact]
         public void Add()
         {
-            var cache = CreateRedisCache();
-
-            var key = "foo";
+            var key = Guid.NewGuid().ToString();
             var expected = "bar";
 
-            cache.Add(key, expected, ObjectCache.InfiniteAbsoluteExpiration);
+            _redisCache.Add(key, expected, ObjectCache.InfiniteAbsoluteExpiration);
 
-            var actual = cache.Get(key);
+            var actual = _redisCache.Get(key);
 
-            Assert.AreEqual(expected, actual);
+            Assert.Equal(expected, actual);
         }
 
-        [TestMethod]
+        [Fact]
         public void AddOrGetExisting()
         {
-            var cache = CreateRedisCache();
-
-            var key = "foo";
+            var key = Guid.NewGuid().ToString();
             var expected = "bar";
 
-            cache.AddOrGetExisting(key, expected, ObjectCache.InfiniteAbsoluteExpiration);
+            _redisCache.AddOrGetExisting(key, expected, ObjectCache.InfiniteAbsoluteExpiration);
 
-            var actual = cache.Get(key);
+            var actual = _redisCache.Get(key);
 
-            Assert.AreEqual(expected, actual);
+            Assert.Equal(expected, actual);
         }
 
-        [TestMethod]
+        [Fact]
         public void SetAndAddOrGetExisting()
         {
-            var cache = CreateRedisCache();
-
-            var key = "foo";
+            var key = Guid.NewGuid().ToString();
             var expected = "bar";
             var newValue = "baz";
 
-            cache.Set(key, expected, ObjectCache.InfiniteAbsoluteExpiration);
+            _redisCache.Set(key, expected, ObjectCache.InfiniteAbsoluteExpiration);
 
-            var actual = cache.AddOrGetExisting(key, newValue, ObjectCache.InfiniteAbsoluteExpiration);
+            var actual = _redisCache.AddOrGetExisting(key, newValue, ObjectCache.InfiniteAbsoluteExpiration);
 
-            Assert.AreEqual(expected, actual);
+            Assert.Equal(expected, actual);
         }
 
-        [TestMethod]
+        [Fact]
         public void Contains()
         {
-            var cache = CreateRedisCache();
-
-            var key = "foo";
+            var key = Guid.NewGuid().ToString();
             var value = "bar";
 
-            cache.Set(key, value, ObjectCache.InfiniteAbsoluteExpiration);
+            _redisCache.Set(key, value, ObjectCache.InfiniteAbsoluteExpiration);
 
-            var actual = cache.Contains(key);
+            var actual = _redisCache.Contains(key);
 
-            Assert.IsTrue(actual);
+            Assert.True(actual);
         }
 
-        [TestMethod]
+        [Fact]
         public void SetAndGet()
         {
-            var cache = CreateRedisCache();
-
-            var key = "foo";
+            var key = Guid.NewGuid().ToString();
             var expected = "bar";
 
-            cache.Set(key, expected, ObjectCache.InfiniteAbsoluteExpiration);
+            _redisCache.Set(key, expected, ObjectCache.InfiniteAbsoluteExpiration);
 
-            var actual = cache.Get(key);
+            var actual = _redisCache.Get(key);
 
-            Assert.AreEqual(expected, actual);
+            Assert.Equal(expected, actual);
         }
 
-        [TestMethod]
+        [Fact]
         public void GetValues()
         {
-            var cache = CreateRedisCache();
-
-            var keys = new[] { "foo", "bar", "baz" };
+            var keys = Enumerable.Range(0, 3).Select(_ => Guid.NewGuid().ToString()).ToArray();
             var expected = new[] { "bar", "baz", "foo" };
 
-            for (int i = 0; i < keys.Length; i++)
+            for (var i = 0; i < keys.Length; i++)
             {
-                cache.Set(keys[i], expected[i], ObjectCache.InfiniteAbsoluteExpiration);
+                _redisCache.Set(keys[i], expected[i], ObjectCache.InfiniteAbsoluteExpiration);
             }
-            
-            var actual = cache.GetValues(keys);
 
-            CollectionAssert.AreEqual(expected, (ICollection)actual.Values);
+            var actual = _redisCache.GetValues(keys);
+
+            Assert.Equal(expected, (ICollection)actual.Values);
         }
 
-        [TestMethod]
+        [Fact]
         public void Remove()
         {
-            var cache = CreateRedisCache();
-
-            var key = "foo";
+            var key = Guid.NewGuid().ToString();
             var value = "bar";
 
-            cache.Set(key, value, ObjectCache.InfiniteAbsoluteExpiration);
+            _redisCache.Set(key, value, ObjectCache.InfiniteAbsoluteExpiration);
 
-            cache.Remove(key);
+            _redisCache.Remove(key);
 
-            var actual = cache.Get(key);
+            var actual = _redisCache.Get(key);
 
-            Assert.IsNull(actual);
+            Assert.Null(actual);
         }
 
-        [TestMethod]
+        [Fact]
         public void RemoveAndReturn()
         {
-            var cache = CreateRedisCache();
-
-            var key = "foo";
+            var key = Guid.NewGuid().ToString();
             var excepted = "bar";
 
-            cache.Set(key, excepted, ObjectCache.InfiniteAbsoluteExpiration);
+            _redisCache.Set(key, excepted, ObjectCache.InfiniteAbsoluteExpiration);
 
-            var actual = cache.Remove(key);
+            var actual = _redisCache.Remove(key);
 
-            Assert.AreEqual(excepted, actual);
+            Assert.Equal(excepted, actual);
         }
 
-        [TestMethod]
+        [Fact]
         public void Indexer()
         {
-            var cache = CreateRedisCache();
-
-            var key = "foo";
+            var key = Guid.NewGuid().ToString();
             var expected = "bar";
 
-            cache[key] = expected;
+            _redisCache[key] = expected;
 
-            var actual = cache[key];
+            var actual = _redisCache[key];
 
-            Assert.AreEqual(expected, actual);
+            Assert.Equal(expected, actual);
         }
 
-        [TestMethod]
+        [Fact]
         public void Empty()
         {
-            var cache = CreateRedisCache();
+            var key = Guid.NewGuid().ToString();
 
-            var key = "foobarbaz";
+            var actual = _redisCache.Get(key);
 
-            var actual = cache.Get(key);
-
-            Assert.IsNull(actual);
-        }
-
-        [TestMethod]
-        public void GetCount()
-        {
-            var cache = CreateRedisCache();
-
-            var expected = 3;
-
-            for (int i = 0; i < expected; i++)
-            {
-                cache.Set("key" + i, "value" + i, ObjectCache.InfiniteAbsoluteExpiration);
-            }
-
-            var actual = cache.GetCount();
-
-            Assert.AreEqual(expected, actual);
-        }
-
-        private ObjectCache CreateRedisCache()
-        {
-#if false
-            var cache = MemoryCache.Default;
-#else
-            var cache = new RedisCache(ConfigurationManager.AppSettings["RedisConfiguration"]);
-#endif
-
-            foreach (var item in cache)
-            {
-                cache.Remove(item.Key);
-            }
-
-            return cache;
+            Assert.Null(actual);
         }
     }
 }
