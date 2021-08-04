@@ -148,20 +148,5 @@ namespace RedisCacheClient.Tests
 
             Assert.Null(actual);
         }
-
-        [Fact]
-        public void GetCount()
-        {
-            var expected = 3;
-
-            for (var i = 0; i < expected; i++)
-            {
-                _redisCache.Set($"{Guid.NewGuid()}{i}", $"value{i}", ObjectCache.InfiniteAbsoluteExpiration);
-            }
-
-            var actual = _redisCache.GetCount();
-
-            Assert.Equal(expected, actual);
-        }
     }
 }
