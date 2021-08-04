@@ -1,11 +1,30 @@
-RedisCacheClient [![NuGet Version](http://img.shields.io/nuget/v/RedisCacheClient.svg?style=flat)](https://www.nuget.org/packages/RedisCacheClient/) [![NuGet Downloads](http://img.shields.io/nuget/dt/RedisCacheClient.svg?style=flat)](https://www.nuget.org/packages/RedisCacheClient/)
-================
+# RedisCacheClient
+
+![Build](https://github.com/shibayan/RedisCacheClient/workflows/Build/badge.svg)
+[![License](https://img.shields.io/github/license/shibayan/RedisCacheClient)](https://github.com/shibayan/RedisCacheClient/blob/master/LICENSE)
+[![Downloads](http://img.shields.io/nuget/dt/RedisCacheClient.svg?style=flat)](https://www.nuget.org/packages/RedisCacheClient/)
 
 RedisCache is a compatible client and ObjectCache added in .NET 4
 
-## Usage
+## NuGet Package
+
+Package Name | Target Framework | NuGet
+---|---|---
+RedisCacheClient | .NET Standard 2.0 | [![NuGet](https://img.shields.io/nuget/v/RedisCacheClient)](https://www.nuget.org/packages/RedisCacheClient/)
+
+## Install
 
 ```
+Install-Package RedisCacheClient
+```
+
+```
+dotnet add package RedisCacheClient
+```
+
+## Usage
+
+```csharp
 var cache = new RedisCache("localhost");
 
 cache.Set("foo", "bar", ObjectCache.InfiniteAbsoluteExpiration);
@@ -19,3 +38,7 @@ foreach (var item in results)
     Console.WriteLine("{0} - {1}", item.Key, item.Value);
 }
 ```
+
+## License
+
+This project is licensed under the [MIT License](https://github.com/shibayan/RedisCacheClient/blob/master/LICENSE)
