@@ -37,8 +37,8 @@ namespace RedisCacheClient
             _db = db;
             _configuration = configuration;
 
-            _serializer = _defaultSerializer;
-            _deserializer = _defaultDeserializer;
+            _serializer = s_defaultSerializer;
+            _deserializer = s_defaultDeserializer;
         }
 
         private const int DefaultDb = 0;
@@ -65,10 +65,8 @@ namespace RedisCacheClient
             }
         }
 
-        private static readonly Dictionary<string, object> _empty = new Dictionary<string, object>();
-
-        private static Func<object, byte[]> _defaultSerializer;
-        private static Func<byte[], object> _defaultDeserializer;
+        private static Func<object, byte[]> s_defaultSerializer;
+        private static Func<byte[], object> s_defaultDeserializer;
 
         public void SetSerializers(Func<object, byte[]> serializer, Func<byte[], object> deserializer)
         {
@@ -78,22 +76,19 @@ namespace RedisCacheClient
 
         public static void SetDefaultSerializers(Func<object, byte[]> serializer, Func<byte[], object> deserializer)
         {
-            _defaultSerializer = serializer;
-            _defaultDeserializer = deserializer;
+            s_defaultSerializer = serializer;
+            s_defaultDeserializer = deserializer;
         }
 
         #region ObjectCache
 
-        public override CacheEntryChangeMonitor CreateCacheEntryChangeMonitor(IEnumerable<string> keys, string regionName = null)
-        {
-            throw new NotSupportedException();
-        }
+        public override CacheEntryChangeMonitor CreateCacheEntryChangeMonitor(IEnumerable<string> keys, string regionName = null) => throw new NotSupportedException();
 
         protected override IEnumerator<KeyValuePair<string, object>> GetEnumerator()
         {
             if (IsDisposed)
             {
-                return _empty.GetEnumerator();
+                return Enumerable.Empty<KeyValuePair<string, object>>().GetEnumerator();
             }
 
             var server = Connection.GetServer();
@@ -126,9 +121,7 @@ namespace RedisCacheClient
         }
 
         public override object AddOrGetExisting(string key, object value, DateTimeOffset absoluteExpiration, string regionName = null)
-        {
-            return AddOrGetExistingInternal(key, value, regionName, new CacheItemPolicy { AbsoluteExpiration = absoluteExpiration });
-        }
+            => AddOrGetExistingInternal(key, value, regionName, new CacheItemPolicy { AbsoluteExpiration = absoluteExpiration });
 
         public override CacheItem AddOrGetExisting(CacheItem value, CacheItemPolicy policy)
         {
@@ -141,24 +134,14 @@ namespace RedisCacheClient
         }
 
         public override object AddOrGetExisting(string key, object value, CacheItemPolicy policy, string regionName = null)
-        {
-            return AddOrGetExistingInternal(key, value, regionName, policy);
-        }
+            => AddOrGetExistingInternal(key, value, regionName, policy);
 
-        public override object Get(string key, string regionName = null)
-        {
-            return GetInternal(key, regionName);
-        }
+        public override object Get(string key, string regionName = null) => GetInternal(key, regionName);
 
-        public override CacheItem GetCacheItem(string key, string regionName = null)
-        {
-            return new CacheItem(key, GetInternal(key, regionName));
-        }
+        public override CacheItem GetCacheItem(string key, string regionName = null) => new CacheItem(key, GetInternal(key, regionName));
 
         public override void Set(string key, object value, DateTimeOffset absoluteExpiration, string regionName = null)
-        {
-            SetInternal(key, value, regionName, new CacheItemPolicy { AbsoluteExpiration = absoluteExpiration });
-        }
+            => SetInternal(key, value, regionName, new CacheItemPolicy { AbsoluteExpiration = absoluteExpiration });
 
         public override void Set(CacheItem item, CacheItemPolicy policy)
         {
@@ -171,14 +154,10 @@ namespace RedisCacheClient
         }
 
         public override void Set(string key, object value, CacheItemPolicy policy, string regionName = null)
-        {
-            SetInternal(key, value, regionName, policy);
-        }
+            => SetInternal(key, value, regionName, policy);
 
         public override IDictionary<string, object> GetValues(IEnumerable<string> keys, string regionName = null)
-        {
-            return GetInternal(keys.ToArray(), regionName);
-        }
+            => GetInternal(keys.ToArray(), regionName);
 
         public override object Remove(string key, string regionName = null)
         {
